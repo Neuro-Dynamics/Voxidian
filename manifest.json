@@ -1,0 +1,13 @@
+{
+  "id": "ai-transcript",
+  "name": "AI Transcript",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Record audio, transcribe via Groq Whisper, optionally postprocess with OpenAI, and insert at the cursor.",
+  "author": "AITranscript",
+  "authorUrl": "",
+  "isDesktopOnly": true,
+  "main": "main.js",
+  "css": "styles.css"
+}
+

@@ -51,7 +51,6 @@ export default class AITranscriptPlugin extends Plugin {
     const modal = new RecordingModal(this.app, {
       presets,
       defaultPresetId: this.settings.lastUsedPromptId || this.settings.defaultPromptId,
-      enablePostprocess: this.settings.enablePostprocess,
       maxDurationSec: this.settings.maxDurationSec,
       onStart: async () => {
         try {
@@ -60,14 +59,14 @@ export default class AITranscriptPlugin extends Plugin {
           console.error(e);
           modal.setPhase('error');
           modal.setStatus('Microphone permission or recorder error.');
-          modal.setButtonsEnabled(false, true);
+          modal.setActionButtonsEnabled(false, false, true);
           modal.setDiscardLabel('Close');
           this.recorder?.discard();
           this.recorder = undefined;
         }
       },
       onStop: async (applyPost, presetId) => {
-        modal.setButtonsEnabled(false, false);
+        modal.setActionButtonsEnabled(false, false, false);
         modal.setPhase('transcribing');
         modal.setStatus('Transcribing…');
         try {
@@ -86,7 +85,7 @@ export default class AITranscriptPlugin extends Plugin {
           await this.insertText(text);
           modal.setPhase('done');
           modal.setStatus('Transcript inserted into the note.');
-          modal.setButtonsEnabled(false, true);
+          modal.setActionButtonsEnabled(false, false, true);
           modal.setDiscardLabel('Close');
           window.setTimeout(() => {
             modal.close();
@@ -96,7 +95,7 @@ export default class AITranscriptPlugin extends Plugin {
           console.error(e);
           modal.setPhase('error');
           modal.setStatus(`Error: ${e?.message || e}`);
-          modal.setButtonsEnabled(false, true);
+          modal.setActionButtonsEnabled(false, false, true);
           modal.setDiscardLabel('Close');
           try { this.recorder?.discard(); } catch {}
           this.recorder = undefined;
@@ -110,6 +109,8 @@ export default class AITranscriptPlugin extends Plugin {
         modal.close();
         this.modal = undefined;
       },
+      onPause: () => this.recorder?.pause(),
+      onResume: () => this.recorder?.resume(),
     });
     this.modal = modal;
 

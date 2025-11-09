@@ -53,12 +53,6 @@ export class AITranscriptSettingTab extends PluginSettingTab {
         .setValue(s.openaiModel)
         .onChange(async (v) => { await this.saveSettings({ openaiModel: v.trim() || 'gpt-4o-mini' }); }));
 
-    new Setting(containerEl)
-      .setName('Enable postprocessing by default')
-      .addToggle(t => t
-        .setValue(!!s.enablePostprocess)
-        .onChange(async (v) => { await this.saveSettings({ enablePostprocess: v }); }));
-
     // Presets
     containerEl.createEl('h4', { text: 'Prompt presets' });
 

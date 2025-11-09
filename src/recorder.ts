@@ -30,6 +30,18 @@ export class AudioRecorder {
     if (this.onTick) this.timer = window.setInterval(() => this.onTick!(Date.now() - this.startedAt), 200);
   }
 
+  pause(): void {
+    if (this.mediaRecorder && this.mediaRecorder.state === 'recording' && typeof this.mediaRecorder.pause === 'function') {
+      this.mediaRecorder.pause();
+    }
+  }
+
+  resume(): void {
+    if (this.mediaRecorder && this.mediaRecorder.state === 'paused' && typeof this.mediaRecorder.resume === 'function') {
+      this.mediaRecorder.resume();
+    }
+  }
+
   async stop(): Promise<Blob> {
     const rec = this.mediaRecorder;
     if (!rec) throw new Error('Recorder not started');
@@ -60,4 +72,3 @@ export class AudioRecorder {
     this.chunks = [];
   }
 }
-

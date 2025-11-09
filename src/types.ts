@@ -16,7 +16,6 @@ export interface AITranscriptSettings {
   openaiApiKey?: string;
   openaiModel: string; // e.g., 'gpt-4o-mini'
 
-  enablePostprocess: boolean;
   promptPresets: PromptPreset[];
   defaultPromptId?: string;
   lastUsedPromptId?: string;
@@ -44,7 +43,6 @@ export const DEFAULT_SETTINGS: AITranscriptSettings = {
   openaiApiKey: '',
   openaiModel: 'gpt-4o-mini',
 
-  enablePostprocess: false,
   promptPresets: [DEFAULT_PRESET],
   defaultPromptId: 'polished',
   lastUsedPromptId: 'polished',
@@ -55,4 +53,3 @@ export const DEFAULT_SETTINGS: AITranscriptSettings = {
   addNewlineBefore: false,
   addNewlineAfter: true,
 };
-
