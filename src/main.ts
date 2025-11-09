@@ -17,7 +17,7 @@ export default class AITranscriptPlugin extends Plugin {
     this.addRibbonIcon('mic', 'Record & Transcribe', () => this.toggleRecording());
 
     this.addCommand({
-      id: 'ai-transcript-start-stop',
+      id: 'voxidian-start-stop',
       name: 'Start/Stop Recording',
       hotkeys: [{ modifiers: ['Mod', 'Shift'], key: 'M' }],
       callback: () => this.toggleRecording(),
@@ -30,8 +30,8 @@ export default class AITranscriptPlugin extends Plugin {
   }
 
   onunload() {
-    try { this.recorder?.discard(); } catch {}
-    try { this.modal?.close(); } catch {}
+    try { this.recorder?.discard(); } catch { }
+    try { this.modal?.close(); } catch { }
   }
 
   private async toggleRecording() {
@@ -87,24 +87,22 @@ export default class AITranscriptPlugin extends Plugin {
           modal.setStatus('Transcript inserted into the note.');
           modal.setActionButtonsEnabled(false, false, true);
           modal.setDiscardLabel('Close');
-          window.setTimeout(() => {
-            modal.close();
-            if (this.modal === modal) this.modal = undefined;
-          }, 600);
+          modal.close();
+          if (this.modal === modal) this.modal = undefined;
         } catch (e: any) {
           console.error(e);
           modal.setPhase('error');
           modal.setStatus(`Error: ${e?.message || e}`);
           modal.setActionButtonsEnabled(false, false, true);
           modal.setDiscardLabel('Close');
-          try { this.recorder?.discard(); } catch {}
+          try { this.recorder?.discard(); } catch { }
           this.recorder = undefined;
         } finally {
           // keep modal open for user to read/close
         }
       },
       onDiscard: () => {
-        try { this.recorder?.discard(); } catch {}
+        try { this.recorder?.discard(); } catch { }
         this.recorder = undefined;
         modal.close();
         this.modal = undefined;

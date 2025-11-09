@@ -1,5 +1,5 @@
 {
-  "name": "obsidian-ai-transcript",
+  "name": "obsidian-voxidian",
   "version": "0.1.0",
   "private": true,
   "license": "UNLICENSED",
@@ -13,4 +13,3 @@
     "typescript": "^5.6.2"
   }
 }
-

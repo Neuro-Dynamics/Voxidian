@@ -15,7 +15,7 @@ import { App, Plugin, PluginSettingTab, Setting, Modal, MarkdownView } from 'obs
 Commands & Hotkeys
 ```ts
 this.addCommand({
-  id: 'ai-transcript-toggle-recording',
+  id: 'voxidian-toggle-recording',
   name: 'Start/Stop Recording',
   hotkeys: [{ modifiers: ['Mod', 'Shift'], key: 'M' }],
   callback: () => this.toggleRecording(),

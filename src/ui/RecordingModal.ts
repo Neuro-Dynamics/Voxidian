@@ -34,24 +34,26 @@ export class RecordingModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
 
-    this.rootEl = contentEl.createDiv({ cls: 'ai-transcript-root' });
+    this.modalEl.addClass('voxidian-modal');
+
+    this.rootEl = contentEl.createDiv({ cls: 'voxidian-root' });
     this.rootEl.setAttribute('data-phase', 'recording');
 
-    const header = this.rootEl.createDiv({ cls: 'ai-transcript-header' });
+    const header = this.rootEl.createDiv({ cls: 'voxidian-header' });
     header.createEl('h3', { text: 'Voxidian' });
-    const headerRight = header.createDiv({ cls: 'ai-transcript-header-right' });
+    const headerRight = header.createDiv({ cls: 'voxidian-header-right' });
     headerRight.createDiv({ cls: 'ai-rec-indicator', attr: { 'aria-label': 'Recording indicator' } });
-    this.elapsedEl = headerRight.createDiv({ text: '00:00', cls: 'ai-transcript-timer' });
+    this.elapsedEl = headerRight.createDiv({ text: '00:00', cls: 'voxidian-timer' });
     this.pauseBtnEl = headerRight.createEl('button', {
-      text: 'Pause',
+      text: '❚❚',
       type: 'button',
-      cls: 'ai-transcript-pause',
+      cls: 'voxidian-pause',
       attr: { 'aria-label': 'Pause recording', 'aria-pressed': 'false' },
     });
     this.pauseBtnEl.addEventListener('click', () => this.togglePause());
     this.resetPauseState();
 
-    const body = this.rootEl.createDiv({ cls: 'ai-transcript-body' });
+    const body = this.rootEl.createDiv({ cls: 'voxidian-body' });
 
     // Preset selection
     new Setting(body)
@@ -62,7 +64,7 @@ export class RecordingModal extends Modal {
         if (this.opts.defaultPresetId) d.setValue(this.opts.defaultPresetId);
       });
 
-    const btns = body.createDiv({ cls: 'ai-transcript-buttons' });
+    const btns = body.createDiv({ cls: 'voxidian-buttons' });
     this.transcribeBtnEl = btns.createEl('button', { text: 'Transcribe', type: 'button' });
     this.postprocessBtnEl = btns.createEl('button', { text: 'PostProcess', type: 'button' });
     this.discardBtnEl = btns.createEl('button', { text: 'Discard', type: 'button' });
@@ -70,7 +72,7 @@ export class RecordingModal extends Modal {
     this.postprocessBtnEl.addEventListener('click', () => this.triggerStop(true));
     this.discardBtnEl.addEventListener('click', () => this.opts.onDiscard());
 
-    const statusBar = this.rootEl.createDiv({ cls: 'ai-transcript-statusbar' });
+    const statusBar = this.rootEl.createDiv({ cls: 'voxidian-statusbar' });
     const statusWrap = statusBar.createDiv({ cls: 'ai-status-wrap' });
     statusWrap.createDiv({ cls: 'ai-spinner', attr: { 'aria-label': 'Working…' } });
     this.statusTextEl = statusWrap.createDiv({ cls: 'ai-status-text', text: 'Listening…' });
@@ -165,7 +167,8 @@ export class RecordingModal extends Modal {
 
   private updatePauseButtonLabel() {
     if (!this.pauseBtnEl) return;
-    this.pauseBtnEl.textContent = this.isPaused ? 'Resume' : 'Pause';
+    this.pauseBtnEl.classList.toggle('is-paused', this.isPaused);
+    this.pauseBtnEl.textContent = this.isPaused ? '▶' : '❚❚';
     this.pauseBtnEl.setAttribute('aria-pressed', this.isPaused ? 'true' : 'false');
     this.pauseBtnEl.setAttribute('aria-label', this.isPaused ? 'Resume recording' : 'Pause recording');
   }
