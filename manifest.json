@@ -6,7 +6,7 @@
   "description": "Seamlessly transcribe audio, and postprocess and edit with AI",
   "author": "Alain Bellon",
   "authorUrl": "",
-  "isDesktopOnly": true,
+  "isDesktopOnly": false,
   "main": "main.js",
   "css": "styles.css"
 }

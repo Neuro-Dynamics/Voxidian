@@ -23,6 +23,15 @@ export default class AITranscriptPlugin extends Plugin {
       callback: () => this.toggleRecording(),
     });
 
+    // Mobile toolbar action: appears in Obsidian Mobile editor toolbar
+    // Users can add this command to the mobile toolbar via Settings → Mobile → Toolbar
+    this.addCommand({
+      id: 'record-transcribe-insert',
+      name: 'Record • Transcribe • Insert',
+      icon: 'mic',
+      editorCallback: () => this.toggleRecording(),
+    });
+
     this.addSettingTab(new AITranscriptSettingTab(this.app, this, () => this.settings, async (partial) => {
       Object.assign(this.settings, partial);
       await this.saveData(this.settings);
