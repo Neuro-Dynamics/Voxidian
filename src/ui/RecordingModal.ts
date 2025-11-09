@@ -38,7 +38,7 @@ export class RecordingModal extends Modal {
     this.rootEl.setAttribute('data-phase', 'recording');
 
     const header = this.rootEl.createDiv({ cls: 'ai-transcript-header' });
-    header.createEl('h3', { text: 'Recording…' });
+    header.createEl('h3', { text: 'Voxidian' });
     const headerRight = header.createDiv({ cls: 'ai-transcript-header-right' });
     headerRight.createDiv({ cls: 'ai-rec-indicator', attr: { 'aria-label': 'Recording indicator' } });
     this.elapsedEl = headerRight.createDiv({ text: '00:00', cls: 'ai-transcript-timer' });
@@ -73,7 +73,7 @@ export class RecordingModal extends Modal {
     const statusBar = this.rootEl.createDiv({ cls: 'ai-transcript-statusbar' });
     const statusWrap = statusBar.createDiv({ cls: 'ai-status-wrap' });
     statusWrap.createDiv({ cls: 'ai-spinner', attr: { 'aria-label': 'Working…' } });
-    this.statusTextEl = statusWrap.createDiv({ cls: 'ai-status-text', text: 'Recording audio…' });
+    this.statusTextEl = statusWrap.createDiv({ cls: 'ai-status-text', text: 'Listening…' });
 
     this.modalEl.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') this.opts.onDiscard();
