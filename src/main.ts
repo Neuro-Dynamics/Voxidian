@@ -1,4 +1,4 @@
-import { App, MarkdownView, Plugin } from 'obsidian';
+import { App, MarkdownView, Plugin, type EditorPosition } from 'obsidian';
 import { AITranscriptSettingTab } from './settings';
 import { AudioRecorder } from './recorder';
 import { postprocessWithOpenAI } from './postprocess';
@@ -129,13 +129,28 @@ export default class AITranscriptPlugin extends Plugin {
     const view = this.app.workspace.getActiveViewOfType(MarkdownView);
     if (!view) throw new Error('No active Markdown editor');
     const editor = view.editor;
+    const normalized = text.startsWith(' ') ? text.slice(1) : text;
     const before = this.settings.addNewlineBefore ? '\n' : '';
     const after = this.settings.addNewlineAfter ? '\n' : '';
-    const content = `${before}${text}${after}`;
+    const content = `${before}${normalized}${after}`;
+
+    let start: EditorPosition;
     if (this.settings.insertMode === 'replace' && editor.somethingSelected()) {
+      start = (editor as any).getCursor('from') as EditorPosition;
       editor.replaceSelection(content);
     } else {
-      editor.replaceRange(content, editor.getCursor());
+      start = editor.getCursor();
+      editor.replaceRange(content, start);
     }
+    const caret = this.advancePos(start, `${before}${normalized}`);
+    editor.setCursor(caret);
+  }
+
+  private advancePos(start: EditorPosition, text: string): EditorPosition {
+    const parts = text.split('\n');
+    if (parts.length === 1) return { line: start.line, ch: start.ch + parts[0].length };
+    const linesAdded = parts.length - 1;
+    const lastLen = parts[parts.length - 1].length;
+    return { line: start.line + linesAdded, ch: lastLen };
   }
 }
