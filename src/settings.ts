@@ -52,6 +52,12 @@ export class AITranscriptSettingTab extends PluginSettingTab {
       .addText(t => t
         .setValue(s.openaiModel)
         .onChange(async (v) => { await this.saveSettings({ openaiModel: v.trim() || 'gpt-4o-mini' }); }));
+    new Setting(containerEl)
+      .setName('Include transcript with postprocessed message')
+      .setDesc('Prepends the raw transcript quoted with ">" when postprocessing succeeds.')
+      .addToggle(t => t
+        .setValue(s.includeTranscriptWithPostprocessed)
+        .onChange(async (v) => { await this.saveSettings({ includeTranscriptWithPostprocessed: v }); }));
 
     // Presets
     containerEl.createEl('h4', { text: 'Prompt presets' });

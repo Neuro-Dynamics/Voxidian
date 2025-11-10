@@ -91,7 +91,8 @@ export default class AITranscriptPlugin extends Plugin {
             modal.setStatus('Cleaning transcript…');
             text = await postprocessWithOpenAI(raw, this.settings, preset);
           }
-          await this.insertText(text);
+          const finalOutput = this.combineTranscripts(raw, text, applyPost);
+          await this.insertText(finalOutput);
           modal.setPhase('done');
           modal.setStatus('Transcript inserted into the note.');
           modal.setActionButtonsEnabled(false, false, true);
@@ -152,5 +153,23 @@ export default class AITranscriptPlugin extends Plugin {
     const linesAdded = parts.length - 1;
     const lastLen = parts[parts.length - 1].length;
     return { line: start.line + linesAdded, ch: lastLen };
+  }
+
+  private combineTranscripts(raw: string, processed: string, postprocessedApplied: boolean): string {
+    if (!(postprocessedApplied && this.settings.includeTranscriptWithPostprocessed)) return processed;
+    const quoted = this.quoteTranscript(raw);
+    if (!quoted) return processed;
+    return processed.trim().length ? `${quoted}\n\n${processed}` : quoted;
+  }
+
+  private quoteTranscript(raw: string): string {
+    const normalized = raw.trim();
+    if (!normalized) return '';
+    const paragraphs = normalized.split(/\n\s*\n/);
+    const quotedBlocks = paragraphs.map((paragraph) => {
+      const lines = paragraph.split('\n');
+      return lines.map(line => `> ${line.trimEnd()}`).join('\n');
+    });
+    return quotedBlocks.join('\n>\n');
   }
 }
