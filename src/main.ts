@@ -89,7 +89,10 @@ export default class AITranscriptPlugin extends Plugin {
             await this.saveData(this.settings);
             modal.setPhase('postprocessing');
             modal.setStatus('Cleaning transcript…');
-            text = await postprocessWithOpenAI(raw, this.settings, preset);
+            // Capture current selection from active editor to include as context or inline in system
+            const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+            const selection = activeView?.editor?.getSelection() || '';
+            text = await postprocessWithOpenAI(raw, this.settings, preset, selection);
           }
           const finalOutput = this.combineTranscripts(raw, text, applyPost);
           await this.insertText(finalOutput);

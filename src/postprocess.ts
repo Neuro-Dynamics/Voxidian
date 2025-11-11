@@ -1,10 +1,27 @@
 import type { AITranscriptSettings, PromptPreset } from './types';
 
-export async function postprocessWithOpenAI(raw: string, settings: AITranscriptSettings, preset?: PromptPreset): Promise<string> {
+export async function postprocessWithOpenAI(
+  raw: string,
+  settings: AITranscriptSettings,
+  preset?: PromptPreset,
+  selection?: string,
+): Promise<string> {
   if (!settings.openaiApiKey) return raw; // silently skip if missing
   const model = preset?.model || settings.openaiModel || 'gpt-4o-mini';
   const temperature = clamp((preset?.temperature ?? 0.2), 0, 1);
-  const system = preset?.system || 'You clean up spoken text. Fix capitalization and punctuation, remove filler words, preserve meaning. Do not add content.';
+  let system = preset?.system || 'You clean up spoken text. Fix capitalization and punctuation, remove filler words, preserve meaning. Do not add content.';
+
+  const sel = (selection || '').trim();
+  // Prepare user content; optionally prepend context if {{selection}} placeholder is not used in system
+  let userContent = raw;
+  if (sel) {
+    if (system.includes('{{selection}}')) {
+      system = system.split('{{selection}}').join(sel);
+    } else {
+      const contextBlock = `Context (selected text):\n---\n${sel}\n---\n\n`;
+      userContent = contextBlock + raw;
+    }
+  }
 
   const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -17,7 +34,7 @@ export async function postprocessWithOpenAI(raw: string, settings: AITranscriptS
       temperature,
       messages: [
         { role: 'system', content: system },
-        { role: 'user', content: raw },
+        { role: 'user', content: userContent },
       ],
     }),
   });
@@ -32,4 +49,3 @@ export async function postprocessWithOpenAI(raw: string, settings: AITranscriptS
 }
 
 function clamp(n: number, min: number, max: number) { return Math.max(min, Math.min(max, n)); }
-

@@ -87,6 +87,7 @@ export class AITranscriptSettingTab extends PluginSettingTab {
           }));
         new Setting(wrap)
           .setName('System prompt')
+          .setDesc('Supports {{selection}} placeholder; when absent, current selection is prepended as context.')
           .addTextArea(t => t.setValue(p.system).onChange(async (v) => {
             p.system = v; await this.saveSettings({ promptPresets: st.promptPresets });
           }));
