@@ -9,7 +9,7 @@ export class AITranscriptSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl('h2', { text: 'AI Transcript' });
+    containerEl.createEl('h2', { text: 'Voxidian' });
 
     const s = this.getSettings();
 
@@ -68,10 +68,11 @@ export class AITranscriptSettingTab extends PluginSettingTab {
       const st = this.getSettings();
       st.promptPresets.forEach((p) => {
         const wrap = listEl.createDiv({ cls: 'ai-preset' });
+        if (st.defaultPromptId === p.id) wrap.createDiv({ text: 'Default preset', cls: 'ai-preset-default' });
         new Setting(wrap)
           .setName(p.name)
           .setDesc('System prompt + temperature')
-          .addButton(b => b.setButtonText('Set Default').onClick(async () => {
+          .addButton(b => b.setButtonText('Set as Default').onClick(async () => {
             await this.saveSettings({ defaultPromptId: p.id });
             renderPresets();
           }))
@@ -101,7 +102,7 @@ export class AITranscriptSettingTab extends PluginSettingTab {
           .addText(t => t.setPlaceholder('e.g., gpt-4o-mini').setValue(p.model || '').onChange(async (v) => {
             p.model = v.trim() || undefined; await this.saveSettings({ promptPresets: st.promptPresets });
           }));
-        if (st.defaultPromptId === p.id) wrap.createDiv({ text: 'Default preset', cls: 'ai-preset-default' });
+
       });
     };
 
