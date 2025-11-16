@@ -122,6 +122,11 @@ export default class AITranscriptPlugin extends Plugin {
       },
       onPause: () => this.recorder?.pause(),
       onResume: () => this.recorder?.resume(),
+      onClose: () => {
+        try { this.recorder?.discard(); } catch { }
+        this.recorder = undefined;
+        if (this.modal === modal) this.modal = undefined;
+      },
     });
     this.modal = modal;
 

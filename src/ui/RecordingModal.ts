@@ -9,6 +9,7 @@ export interface RecordingModalOptions {
   onDiscard: () => void;
   onPause?: () => void;
   onResume?: () => void;
+  onClose?: () => void;
 }
 
 export class RecordingModal extends Modal {
@@ -95,6 +96,7 @@ export class RecordingModal extends Modal {
     if (this.timer) window.clearInterval(this.timer);
     this.timer = undefined;
     this.contentEl.empty();
+    this.opts.onClose?.();
   }
 
   private tick(): void {
