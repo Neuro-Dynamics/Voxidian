@@ -96,7 +96,7 @@ export default class AITranscriptPlugin extends Plugin {
             text = await postprocessWithOpenAI(raw, this.settings, preset, selection);
           }
           const finalOutput = this.combineTranscripts(raw, text, applyPost, preset);
-          await this.insertText(finalOutput);
+          await this.insertText(finalOutput, preset?.replaceSelection);
           modal.setPhase('done');
           modal.setStatus('Transcript inserted into the note.');
           modal.setActionButtonsEnabled(false, false, true);
@@ -135,7 +135,7 @@ export default class AITranscriptPlugin extends Plugin {
     modal.open();
   }
 
-  private async insertText(text: string) {
+  private async insertText(text: string, replaceSelectionOverride?: boolean) {
     const view = this.app.workspace.getActiveViewOfType(MarkdownView);
     if (!view) throw new Error('No active Markdown editor');
     const editor = view.editor;
@@ -145,7 +145,8 @@ export default class AITranscriptPlugin extends Plugin {
     const content = `${before}${normalized}${after}`;
 
     let start: EditorPosition;
-    if (this.settings.insertMode === 'replace' && editor.somethingSelected()) {
+    const replaceSelection = replaceSelectionOverride ?? (this.settings.insertMode === 'replace');
+    if (replaceSelection && editor.somethingSelected()) {
       start = (editor as any).getCursor('from') as EditorPosition;
       editor.replaceSelection(content);
     } else {

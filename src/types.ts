@@ -6,6 +6,7 @@ export interface PromptPreset {
   system: string;
   temperature: number;
   includeTranscriptWithPostprocessed?: boolean;
+  replaceSelection?: boolean;
   model?: string; // optional OpenAI model override
 }
 

@@ -116,6 +116,15 @@ export class AITranscriptSettingTab extends PluginSettingTab {
               p.includeTranscriptWithPostprocessed = v;
               await this.saveSettings({ promptPresets: st.promptPresets });
             }));
+        new Setting(wrap)
+          .setName('Replace selection')
+          .setDesc('When enabled, Voxidian replaces the current editor selection with this preset\'s output.')
+          .addToggle(t => t
+            .setValue(p.replaceSelection ?? (st.insertMode === 'replace'))
+            .onChange(async (v) => {
+              p.replaceSelection = v;
+              await this.saveSettings({ promptPresets: st.promptPresets });
+            }));
         // Add some space after each preset
         wrap.createEl('br');
 
@@ -157,7 +166,10 @@ export class AITranscriptSettingTab extends PluginSettingTab {
         .addOption('insert', 'Insert at cursor')
         .addOption('replace', 'Replace selection')
         .setValue(s.insertMode)
-        .onChange(async (v) => { await this.saveSettings({ insertMode: v as any }); }));
+        .onChange(async (v) => {
+          await this.saveSettings({ insertMode: v as any });
+          renderPresets();
+        }));
     new Setting(containerEl)
       .setName('Add newline before')
       .addToggle(t => t.setValue(s.addNewlineBefore).onChange(async (v) => { await this.saveSettings({ addNewlineBefore: v }); }));
