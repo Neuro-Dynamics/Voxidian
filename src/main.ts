@@ -79,12 +79,13 @@ export default class AITranscriptPlugin extends Plugin {
         modal.setPhase('transcribing');
         modal.setStatus('Transcribing…');
         try {
+          let preset: PromptPreset | undefined;
           const blob = await this.recorder!.stop();
           this.recorder = undefined;
           const raw = await transcribeWithGroq(blob, this.settings);
           let text = raw;
           if (applyPost) {
-            const preset = this.settings.promptPresets.find(p => p.id === presetId) as PromptPreset | undefined;
+            preset = this.settings.promptPresets.find(p => p.id === presetId) as PromptPreset | undefined;
             this.settings.lastUsedPromptId = preset?.id || presetId || this.settings.lastUsedPromptId;
             await this.saveData(this.settings);
             modal.setPhase('postprocessing');
@@ -94,7 +95,7 @@ export default class AITranscriptPlugin extends Plugin {
             const selection = activeView?.editor?.getSelection() || '';
             text = await postprocessWithOpenAI(raw, this.settings, preset, selection);
           }
-          const finalOutput = this.combineTranscripts(raw, text, applyPost);
+          const finalOutput = this.combineTranscripts(raw, text, applyPost, preset);
           await this.insertText(finalOutput);
           modal.setPhase('done');
           modal.setStatus('Transcript inserted into the note.');
@@ -163,8 +164,9 @@ export default class AITranscriptPlugin extends Plugin {
     return { line: start.line + linesAdded, ch: lastLen };
   }
 
-  private combineTranscripts(raw: string, processed: string, postprocessedApplied: boolean): string {
-    if (!(postprocessedApplied && this.settings.includeTranscriptWithPostprocessed)) return processed;
+  private combineTranscripts(raw: string, processed: string, postprocessedApplied: boolean, preset?: PromptPreset): string {
+    const includeTranscriptWithPostprocessed = preset?.includeTranscriptWithPostprocessed ?? true;
+    if (!(postprocessedApplied && includeTranscriptWithPostprocessed)) return processed;
     const quoted = this.quoteTranscript(raw);
     if (!quoted) return processed;
     return processed.trim().length ? `${quoted}\n\n${processed}` : quoted;

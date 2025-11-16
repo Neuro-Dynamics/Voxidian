@@ -5,6 +5,7 @@ export interface PromptPreset {
   name: string;
   system: string;
   temperature: number;
+  includeTranscriptWithPostprocessed?: boolean;
   model?: string; // optional OpenAI model override
 }
 
@@ -25,7 +26,6 @@ export interface AITranscriptSettings {
   insertMode: InsertMode;
   addNewlineBefore: boolean;
   addNewlineAfter: boolean;
-  includeTranscriptWithPostprocessed: boolean;
 }
 
 export const DEFAULT_PRESET: PromptPreset = {
@@ -53,5 +53,4 @@ export const DEFAULT_SETTINGS: AITranscriptSettings = {
   insertMode: 'insert',
   addNewlineBefore: false,
   addNewlineAfter: true,
-  includeTranscriptWithPostprocessed: false,
 };

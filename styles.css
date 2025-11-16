@@ -43,6 +43,38 @@
   font-size: 0.9em;
 }
 
+.ai-preset {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.ai-preset-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ai-preset-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.ai-preset-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.ai-preset-name {
+  margin: 0 0 4px;
+}
+
+.ai-system-textarea {
+  width: 100%;
+}
+
 .voxidian-statusbar {
   margin-top: auto;
   padding-top: 10px;

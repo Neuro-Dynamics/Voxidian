@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, ButtonComponent, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import type { AITranscriptSettings, PromptPreset } from './types';
 
 export class AITranscriptSettingTab extends PluginSettingTab {
@@ -52,12 +52,6 @@ export class AITranscriptSettingTab extends PluginSettingTab {
       .addText(t => t
         .setValue(s.openaiModel)
         .onChange(async (v) => { await this.saveSettings({ openaiModel: v.trim() || 'gpt-4o-mini' }); }));
-    new Setting(containerEl)
-      .setName('Include transcript with postprocessed message')
-      .setDesc('Prepends the raw transcript quoted with ">" when postprocessing succeeds.')
-      .addToggle(t => t
-        .setValue(s.includeTranscriptWithPostprocessed)
-        .onChange(async (v) => { await this.saveSettings({ includeTranscriptWithPostprocessed: v }); }));
 
     // Presets
     containerEl.createEl('h3', { text: 'Prompt presets' });
@@ -68,18 +62,25 @@ export class AITranscriptSettingTab extends PluginSettingTab {
       const st = this.getSettings();
       st.promptPresets.forEach((p) => {
         const wrap = listEl.createDiv({ cls: 'ai-preset' });
-        new Setting(wrap)
-          .setName(p.name)
-          .addButton(b => b.setButtonText('Set as Default').onClick(async () => {
+        const header = wrap.createDiv({ cls: 'ai-preset-header' });
+        const title = header.createDiv({ cls: 'ai-preset-title' });
+        title.createEl('h4', { text: p.name, cls: 'ai-preset-name' });
+        if (st.defaultPromptId === p.id) title.createSpan({ text: 'Default preset', cls: 'ai-preset-default' });
+        const actionsEl = header.createDiv({ cls: 'ai-preset-actions' });
+        new ButtonComponent(actionsEl)
+          .setButtonText('Set as Default')
+          .onClick(async () => {
             await this.saveSettings({ defaultPromptId: p.id });
             renderPresets();
-          }))
-          .addButton(b => b.setButtonText('Delete').onClick(async () => {
+          });
+        new ButtonComponent(actionsEl)
+          .setButtonText('Delete')
+          .setWarning()
+          .onClick(async () => {
             const filtered = st.promptPresets.filter(x => x.id !== p.id);
             await this.saveSettings({ promptPresets: filtered });
             renderPresets();
-          }));
-        if (st.defaultPromptId === p.id) wrap.createDiv({ text: 'Default preset', cls: 'ai-preset-default' });
+          });
         new Setting(wrap)
           .setName('Name')
           .addText(t => t.setValue(p.name).onChange(async (v) => {
@@ -88,9 +89,14 @@ export class AITranscriptSettingTab extends PluginSettingTab {
         new Setting(wrap)
           .setName('System prompt')
           .setDesc('Supports {{selection}} placeholder; when absent, current selection is prepended as context.')
-          .addTextArea(t => t.setValue(p.system).onChange(async (v) => {
-            p.system = v; await this.saveSettings({ promptPresets: st.promptPresets });
-          }));
+          .addTextArea(t => {
+            t.setValue(p.system);
+            t.inputEl.rows = 6;
+            t.inputEl.addClass('ai-system-textarea');
+            t.onChange(async (v) => {
+              p.system = v; await this.saveSettings({ promptPresets: st.promptPresets });
+            });
+          });
         new Setting(wrap)
           .setName('Temperature')
           .addText(t => t.setValue(String(p.temperature)).onChange(async (v) => {
@@ -101,18 +107,33 @@ export class AITranscriptSettingTab extends PluginSettingTab {
           .addText(t => t.setPlaceholder('e.g., gpt-4o-mini').setValue(p.model || '').onChange(async (v) => {
             p.model = v.trim() || undefined; await this.saveSettings({ promptPresets: st.promptPresets });
           }));
+        new Setting(wrap)
+          .setName('Include transcript with postprocessed message')
+          .setDesc('Prepends the raw transcript quoted with ">" when postprocessing succeeds.')
+          .addToggle(t => t
+            .setValue(p.includeTranscriptWithPostprocessed ?? true)
+            .onChange(async (v) => {
+              p.includeTranscriptWithPostprocessed = v;
+              await this.saveSettings({ promptPresets: st.promptPresets });
+            }));
+        // Add some space after each preset
+        wrap.createEl('br');
 
       });
     };
 
     renderPresets();
 
+    // Add a separator before the Add button
+    containerEl.createEl('hr');
+
+
     new Setting(containerEl)
       .setName('Add preset')
       .addButton(b => b.setButtonText('Add').onClick(async () => {
         const st = this.getSettings();
         const id = `preset-${Date.now()}`;
-        const preset: PromptPreset = { id, name: 'New Preset', system: 'Edit me…', temperature: 0.2 };
+        const preset: PromptPreset = { id, name: 'New Preset', system: 'Edit me…', temperature: 0.2, includeTranscriptWithPostprocessed: true };
         await this.saveSettings({ promptPresets: [...st.promptPresets, preset] });
         renderPresets();
       }));
