@@ -9,7 +9,7 @@ export class AITranscriptSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl('h2', { text: 'Voxidian' });
+    containerEl.createEl('h1', { text: 'Voxidian' });
 
     const s = this.getSettings();
 
@@ -60,7 +60,7 @@ export class AITranscriptSettingTab extends PluginSettingTab {
         .onChange(async (v) => { await this.saveSettings({ includeTranscriptWithPostprocessed: v }); }));
 
     // Presets
-    containerEl.createEl('h4', { text: 'Prompt presets' });
+    containerEl.createEl('h3', { text: 'Prompt presets' });
 
     const listEl = containerEl.createDiv();
     const renderPresets = () => {
@@ -68,10 +68,8 @@ export class AITranscriptSettingTab extends PluginSettingTab {
       const st = this.getSettings();
       st.promptPresets.forEach((p) => {
         const wrap = listEl.createDiv({ cls: 'ai-preset' });
-        if (st.defaultPromptId === p.id) wrap.createDiv({ text: 'Default preset', cls: 'ai-preset-default' });
         new Setting(wrap)
           .setName(p.name)
-          .setDesc('System prompt + temperature')
           .addButton(b => b.setButtonText('Set as Default').onClick(async () => {
             await this.saveSettings({ defaultPromptId: p.id });
             renderPresets();
@@ -81,6 +79,7 @@ export class AITranscriptSettingTab extends PluginSettingTab {
             await this.saveSettings({ promptPresets: filtered });
             renderPresets();
           }));
+        if (st.defaultPromptId === p.id) wrap.createDiv({ text: 'Default preset', cls: 'ai-preset-default' });
         new Setting(wrap)
           .setName('Name')
           .addText(t => t.setValue(p.name).onChange(async (v) => {
