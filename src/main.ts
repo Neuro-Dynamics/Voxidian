@@ -1,18 +1,37 @@
 import { App, MarkdownView, Plugin, type EditorPosition } from 'obsidian';
 import { AITranscriptSettingTab } from './settings';
 import { AudioRecorder } from './recorder';
-import { postprocessWithOpenAI } from './postprocess';
+import { postprocessTranscript } from './postprocess';
 import { transcribeWithGroq } from './transcribe';
+import { registerErrorLogSink, type VoxidianErrorLogEntry } from './logging';
 import { DEFAULT_SETTINGS, type AITranscriptSettings, type PromptPreset } from './types';
 import { RecordingModal } from './ui/RecordingModal';
 
+interface VoxidianPersistentData {
+  settings?: AITranscriptSettings;
+  errorLog?: VoxidianErrorLogEntry[];
+}
+
 export default class AITranscriptPlugin extends Plugin {
   settings: AITranscriptSettings = { ...DEFAULT_SETTINGS, promptPresets: [...DEFAULT_SETTINGS.promptPresets] };
+  errorLog: VoxidianErrorLogEntry[] = [];
   private recorder?: AudioRecorder;
   private modal?: RecordingModal;
 
   async onload() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    const raw = (await this.loadData()) as VoxidianPersistentData | AITranscriptSettings | null;
+    if (raw && (raw as VoxidianPersistentData).settings) {
+      const data = raw as VoxidianPersistentData;
+      this.settings = Object.assign({}, DEFAULT_SETTINGS, data.settings || {});
+      this.errorLog = Array.isArray(data.errorLog) ? data.errorLog : [];
+    } else {
+      this.settings = Object.assign({}, DEFAULT_SETTINGS, raw || {});
+      this.errorLog = [];
+    }
+
+    registerErrorLogSink((entry) => {
+      this.appendErrorLog(entry);
+    });
 
     this.addRibbonIcon('mic', 'Record & Transcribe', () => this.toggleRecording());
 
@@ -32,10 +51,21 @@ export default class AITranscriptPlugin extends Plugin {
       editorCallback: () => this.toggleRecording(),
     });
 
-    this.addSettingTab(new AITranscriptSettingTab(this.app, this, () => this.settings, async (partial) => {
-      Object.assign(this.settings, partial);
-      await this.saveData(this.settings);
-    }));
+    this.addSettingTab(
+      new AITranscriptSettingTab(
+        this.app,
+        this,
+        () => this.settings,
+        async (partial) => {
+          Object.assign(this.settings, partial);
+          await this.saveAllData();
+        },
+        () => this.errorLog,
+        async () => {
+          await this.clearErrorLog();
+        },
+      ),
+    );
   }
 
   onunload() {
@@ -87,13 +117,13 @@ export default class AITranscriptPlugin extends Plugin {
           if (applyPost) {
             preset = this.settings.promptPresets.find(p => p.id === presetId) as PromptPreset | undefined;
             this.settings.lastUsedPromptId = preset?.id || presetId || this.settings.lastUsedPromptId;
-            await this.saveData(this.settings);
+            await this.saveAllData();
             modal.setPhase('postprocessing');
             modal.setStatus('Cleaning transcript…');
             // Capture current selection from active editor to include as context or inline in system
             const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
             const selection = activeView?.editor?.getSelection() || '';
-            text = await postprocessWithOpenAI(raw, this.settings, preset, selection);
+            text = await postprocessTranscript(raw, this.settings, preset, selection);
           }
           const finalOutput = this.combineTranscripts(raw, text, applyPost, preset);
           await this.insertText(finalOutput, preset?.replaceSelection);
@@ -182,5 +212,35 @@ export default class AITranscriptPlugin extends Plugin {
       return lines.map(line => `> ${line.trimEnd()}`).join('\n');
     });
     return quotedBlocks.join('\n>\n');
+  }
+
+  private async saveAllData(): Promise<void> {
+    const payload: VoxidianPersistentData = {
+      settings: this.settings,
+      errorLog: this.errorLog,
+    };
+    await this.saveData(payload);
+  }
+
+  private appendErrorLog(entry: VoxidianErrorLogEntry): void {
+    this.errorLog.push(entry);
+    if (this.errorLog.length > 200) {
+      this.errorLog = this.errorLog.slice(-200);
+    }
+    // Fire-and-forget; logging failure should not break UX
+    this.saveAllData().catch((e) => console.error('[Voxidian] failed to persist error log', e));
+  }
+
+  private async clearErrorLog(): Promise<void> {
+    this.errorLog = [];
+    try {
+      const w = window as any;
+      if (Array.isArray(w.VoxidianErrorLog)) {
+        w.VoxidianErrorLog = [];
+      }
+    } catch {
+      // ignore window access issues
+    }
+    await this.saveAllData();
   }
 }

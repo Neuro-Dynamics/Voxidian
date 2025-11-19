@@ -1,6 +1,6 @@
 AI Transcript — Obsidian Plugin (MVP)
 
-Record audio, transcribe via Groq Whisper, optionally postprocess with OpenAI, and insert the result at the cursor.
+Record audio, transcribe via Groq Whisper, optionally postprocess with OpenAI or Gemini, and insert the result at the cursor.
 
 Features
 - Ribbon mic button + command (`Mod+Shift+M`) to start.
@@ -12,7 +12,7 @@ Features
 Requirements
 - Obsidian v1.5.0+ (desktop recommended).
 - Groq API Key for transcription.
-- Optional: OpenAI API Key for postprocessing.
+- Optional: OpenAI or Gemini API Key for postprocessing.
 
 Build
 1. Install Node.js (v18+ recommended)
@@ -30,7 +30,8 @@ Then enable the plugin in Settings → Community plugins.
 Settings
 - Groq Whisper: API key, model (default: `whisper-large-v3`), optional language.
 - OpenAI: API key, model (default: `gpt-4o-mini`).
-- Postprocessing: enable-by-default, presets (name, system prompt, temperature, optional model override) with default preset selection.
+- Gemini: API key, model (default: `gemini-1.5-flash`).
+- Postprocessing: enable-by-default, provider (OpenAI or Gemini), presets (name, system prompt, temperature, optional model override) with default preset selection.
 - Recording & Insertion: show modal, max duration, insert vs replace, add newlines before/after.
 
 Privacy
@@ -41,4 +42,3 @@ Privacy
 Notes
 - If OpenAI postprocessing fails, the raw Groq transcript is used.
 - Mobile support is not tested; desktop-only in manifest.
-

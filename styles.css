@@ -75,6 +75,50 @@
   width: 100%;
 }
 
+.ai-preset-json-textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ai-preset-json-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.voxidian-error-log {
+  max-height: 220px;
+  overflow-y: auto;
+  margin-top: 4px;
+  padding: 6px 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  background-color: var(--background-secondary);
+  font-size: 0.7em;
+}
+
+.voxidian-error-log-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.voxidian-error-log-item {
+  margin-bottom: 6px;
+}
+
+.voxidian-error-log-meta {
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.voxidian-error-log-detail {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .voxidian-statusbar {
   margin-top: auto;
   padding-top: 10px;

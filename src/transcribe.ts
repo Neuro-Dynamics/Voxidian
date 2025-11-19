@@ -1,3 +1,5 @@
+import { Notice } from 'obsidian';
+import { logError } from './logging';
 import type { AITranscriptSettings } from './types';
 
 export async function transcribeWithGroq(blob: Blob, settings: AITranscriptSettings): Promise<string> {
@@ -13,8 +15,24 @@ export async function transcribeWithGroq(blob: Blob, settings: AITranscriptSetti
     body: fd,
   });
   if (!resp.ok) {
-    const text = await safeText(resp);
-    throw new Error(`Groq transcription failed (${resp.status}): ${text}`);
+    let detail = await safeText(resp);
+    try {
+      const parsed = JSON.parse(detail);
+      const jsonMsg = (parsed as any)?.error?.message || (parsed as any)?.message;
+      if (typeof jsonMsg === 'string' && jsonMsg.trim()) {
+        detail = jsonMsg;
+      }
+    } catch {
+      // ignore JSON parse errors; keep raw detail
+    }
+    const trimmed =
+      detail && detail.length > 300 ? `${detail.slice(0, 297)}…` : detail;
+    logError('Groq', resp.status, detail || '<no-body>');
+    const noticeMsg = trimmed
+      ? `Groq transcription failed (${resp.status}): ${trimmed}`
+      : `Groq transcription failed (${resp.status}).`;
+    new Notice(noticeMsg, 15000);
+    throw new Error(`Groq transcription failed (${resp.status}): ${detail || '<no-body>'}`);
   }
   const data = await resp.json();
   if (typeof data?.text !== 'string') throw new Error('Groq response missing text');
@@ -24,4 +42,3 @@ export async function transcribeWithGroq(blob: Blob, settings: AITranscriptSetti
 async function safeText(resp: Response) {
   try { return await resp.text(); } catch { return '<no-body>'; }
 }
-

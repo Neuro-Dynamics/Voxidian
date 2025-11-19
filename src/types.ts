@@ -1,4 +1,5 @@
 export type InsertMode = 'insert' | 'replace';
+export type PostprocessingProvider = 'openai' | 'gemini';
 
 export interface PromptPreset {
   id: string;
@@ -17,6 +18,11 @@ export interface AITranscriptSettings {
 
   openaiApiKey?: string;
   openaiModel: string; // e.g., 'gpt-4o-mini'
+
+   geminiApiKey?: string;
+   geminiModel: string; // e.g., 'gemini-1.5-flash'
+
+   postprocessingProvider: PostprocessingProvider;
 
   promptPresets: PromptPreset[];
   defaultPromptId?: string;
@@ -44,6 +50,11 @@ export const DEFAULT_SETTINGS: AITranscriptSettings = {
 
   openaiApiKey: '',
   openaiModel: 'gpt-4o-mini',
+
+  geminiApiKey: '',
+  geminiModel: 'gemini-1.5-flash',
+
+  postprocessingProvider: 'openai',
 
   promptPresets: [DEFAULT_PRESET],
   defaultPromptId: 'polished',
