@@ -5,7 +5,8 @@
   "license": "UNLICENSED",
   "scripts": {
     "dev": "node esbuild.config.mjs --watch",
-    "build": "node esbuild.config.mjs"
+    "build": "node esbuild.config.mjs",
+    "version": "node scripts/sync-version.js && npm run build && git add manifest.json package.json package-lock.json main.js styles.css"
   },
   "devDependencies": {
     "esbuild": "^0.21.5",
