@@ -26,6 +26,16 @@ export class RecordingModal extends Modal {
   private isPaused = false;
   private pauseStartedAt = 0;
   private accumulatedPauseMs = 0;
+  private outsideCaptureOpts: AddEventListenerOptions = { capture: true };
+  private outsideTouchOpts: AddEventListenerOptions = { capture: true, passive: false };
+  private preventOutsideClose = (evt: Event) => {
+    if (!this.modalEl) return;
+    if (this.modalEl.contains(evt.target as Node)) return;
+    // Block default modal behavior that closes on backdrop interactions
+    evt.preventDefault();
+    evt.stopPropagation();
+    evt.stopImmediatePropagation();
+  };
 
   constructor(app: App, private opts: RecordingModalOptions) {
     super(app);
@@ -85,6 +95,9 @@ export class RecordingModal extends Modal {
         this.triggerStop(false);
       }
     });
+    this.containerEl.addEventListener('pointerdown', this.preventOutsideClose, this.outsideCaptureOpts);
+    this.containerEl.addEventListener('click', this.preventOutsideClose, this.outsideCaptureOpts);
+    this.containerEl.addEventListener('touchstart', this.preventOutsideClose, this.outsideTouchOpts);
 
     // Start timer
     this.startedAt = Date.now();
@@ -93,6 +106,9 @@ export class RecordingModal extends Modal {
   }
 
   onClose(): void {
+    this.containerEl.removeEventListener('pointerdown', this.preventOutsideClose, this.outsideCaptureOpts);
+    this.containerEl.removeEventListener('click', this.preventOutsideClose, this.outsideCaptureOpts);
+    this.containerEl.removeEventListener('touchstart', this.preventOutsideClose, this.outsideTouchOpts);
     if (this.timer) window.clearInterval(this.timer);
     this.timer = undefined;
     this.contentEl.empty();
