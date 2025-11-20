@@ -78,7 +78,7 @@ export class RecordingModal extends Modal {
     const btns = body.createDiv({ cls: 'voxidian-buttons' });
     this.transcribeBtnEl = btns.createEl('button', { text: 'Transcribe', type: 'button' });
     this.postprocessBtnEl = btns.createEl('button', { text: 'PostProcess', type: 'button' });
-    this.discardBtnEl = btns.createEl('button', { text: 'Discard', type: 'button' });
+    this.discardBtnEl = btns.createEl('button', { text: 'Cancel', type: 'button' });
     this.transcribeBtnEl.addEventListener('click', () => this.triggerStop(false));
     this.postprocessBtnEl.addEventListener('click', () => this.triggerStop(true));
     this.discardBtnEl.addEventListener('click', () => this.opts.onDiscard());

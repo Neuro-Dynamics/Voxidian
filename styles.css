@@ -38,6 +38,24 @@
   margin-top: 4px;
 }
 
+.ai-preset-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ai-preset-section-title {
+  margin: 0;
+}
+
+.ai-preset-section-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .ai-preset-default {
   color: var(--text-accent);
   font-size: 0.9em;

@@ -12,7 +12,7 @@ class PresetImportModal extends Modal {
   onOpen(): void {
     const { contentEl } = this;
     contentEl.empty();
-    contentEl.createEl('h3', { text: 'Import JSON preset' });
+    contentEl.createEl('h3', { text: 'Import preset' });
     contentEl.createEl('p', {
       text: 'Paste a preset JSON exported from Voxidian, or an array of presets.',
     });
@@ -48,15 +48,24 @@ class PresetImportModal extends Modal {
     }
   }
 
+  // Some messaging apps inject invisible or non-breaking characters that JSON.parse rejects.
+  private sanitizeJsonInput(raw: string): string {
+    return raw
+      .replace(/\uFEFF/g, '') // BOM
+      .replace(/[\u200B-\u200D\u2060]/g, '') // zero-width spaces
+      .replace(/[\u00A0\u2007\u202F]/g, ' ') // non-breaking spaces -> regular spaces
+      .trim();
+  }
+
   private async handleImport() {
     if (!this.textareaEl) return;
-    const raw = this.textareaEl.value.trim();
-    if (!raw) {
+    const cleaned = this.sanitizeJsonInput(this.textareaEl.value);
+    if (!cleaned) {
       new Notice('Paste preset JSON to import.');
       return;
     }
     try {
-      const parsed = JSON.parse(raw);
+      const parsed = JSON.parse(cleaned);
       await this.onImport(parsed);
       this.close();
     } catch (e: any) {
@@ -150,8 +159,13 @@ export class AITranscriptSettingTab extends PluginSettingTab {
         .setValue(s.postprocessingProvider || 'openai')
         .onChange(async (v) => { await this.saveSettings({ postprocessingProvider: v as any }); }));
 
+    containerEl.createEl('hr');
+    containerEl.createEl('br');
+
     // Presets
-    containerEl.createEl('h3', { text: 'Prompt presets' });
+    const presetSection = containerEl.createDiv({ cls: 'ai-preset-section' });
+    presetSection.createEl('h3', { text: 'Prompt presets', cls: 'ai-preset-section-title' });
+    const presetActions = presetSection.createDiv({ cls: 'ai-preset-section-actions' });
 
     const listEl = containerEl.createDiv();
     const renderPresets = () => {
@@ -162,7 +176,7 @@ export class AITranscriptSettingTab extends PluginSettingTab {
         const header = wrap.createDiv({ cls: 'ai-preset-header' });
         const title = header.createDiv({ cls: 'ai-preset-title' });
         title.createEl('h4', { text: p.name, cls: 'ai-preset-name' });
-        if (st.defaultPromptId === p.id) title.createSpan({ text: 'Default preset', cls: 'ai-preset-default' });
+        if (st.defaultPromptId === p.id) title.createSpan({ text: 'Default', cls: 'ai-preset-default' });
         const actionsEl = header.createDiv({ cls: 'ai-preset-actions' });
         new ButtonComponent(actionsEl)
           .setButtonText('Set as Default')
@@ -257,78 +271,82 @@ export class AITranscriptSettingTab extends PluginSettingTab {
       });
     };
 
+    const addPreset = async () => {
+      const st = this.getSettings();
+      const id = `preset-${Date.now()}`;
+      const preset: PromptPreset = { id, name: 'New Preset', system: 'Edit me…', temperature: 0.2, includeTranscriptWithPostprocessed: true };
+      await this.saveSettings({ promptPresets: [...st.promptPresets, preset] });
+      renderPresets();
+    };
+
+    const openImportModal = () => {
+      const modal = new PresetImportModal(this.app, async (value) => {
+        const st = this.getSettings();
+        const existing = [...st.promptPresets];
+        const newPresets: PromptPreset[] = [];
+        const addOne = (raw: any) => {
+          if (!raw || typeof raw !== 'object') return;
+          const baseId = typeof raw.id === 'string' && raw.id.trim()
+            ? raw.id.trim()
+            : `preset-${Date.now()}-${newPresets.length}`;
+          const isIdUsed = (id: string) =>
+            existing.some(p => p.id === id) || newPresets.some(p => p.id === id);
+          let id = baseId;
+          let suffix = 1;
+          while (isIdUsed(id)) {
+            id = `${baseId}-${suffix++}`;
+          }
+          const name = typeof raw.name === 'string' && raw.name.trim() ? raw.name.trim() : 'Imported preset';
+          const system = typeof raw.system === 'string' && raw.system.trim() ? raw.system : 'Edit me…';
+          const temperature = typeof raw.temperature === 'number' && isFinite(raw.temperature) ? raw.temperature : 0.2;
+          const includeTranscriptWithPostprocessed =
+            typeof raw.includeTranscriptWithPostprocessed === 'boolean'
+              ? raw.includeTranscriptWithPostprocessed
+              : true;
+          const replaceSelection =
+            typeof raw.replaceSelection === 'boolean' ? raw.replaceSelection : undefined;
+          const model =
+            typeof raw.model === 'string' && raw.model.trim() ? raw.model.trim() : undefined;
+          newPresets.push({
+            id,
+            name,
+            system,
+            temperature,
+            includeTranscriptWithPostprocessed,
+            replaceSelection,
+            model,
+          });
+        };
+        if (Array.isArray(value)) {
+          value.forEach(addOne);
+        } else {
+          addOne(value as any);
+        }
+        if (!newPresets.length) {
+          new Notice('No valid presets found in JSON.');
+          return;
+        }
+        await this.saveSettings({ promptPresets: [...existing, ...newPresets] });
+        renderPresets();
+        new Notice(
+          newPresets.length === 1
+            ? 'Imported 1 preset.'
+            : `Imported ${newPresets.length} presets.`
+        );
+      });
+      modal.open();
+    };
+
     renderPresets();
 
-    // Add a separator before the Add button
+    new ButtonComponent(presetActions)
+      .setButtonText('Add preset')
+      .onClick(addPreset);
+    new ButtonComponent(presetActions)
+      .setButtonText('Import')
+      .onClick(openImportModal);
+
     containerEl.createEl('hr');
-
-
-    new Setting(containerEl)
-      .setName('Add preset')
-      .addButton(b => b.setButtonText('Add').onClick(async () => {
-        const st = this.getSettings();
-        const id = `preset-${Date.now()}`;
-        const preset: PromptPreset = { id, name: 'New Preset', system: 'Edit me…', temperature: 0.2, includeTranscriptWithPostprocessed: true };
-        await this.saveSettings({ promptPresets: [...st.promptPresets, preset] });
-        renderPresets();
-      }))
-      .addButton(b => b.setButtonText('Import JSON preset').onClick(() => {
-        const modal = new PresetImportModal(this.app, async (value) => {
-          const st = this.getSettings();
-          const existing = [...st.promptPresets];
-          const newPresets: PromptPreset[] = [];
-          const addOne = (raw: any) => {
-            if (!raw || typeof raw !== 'object') return;
-            const baseId = typeof raw.id === 'string' && raw.id.trim()
-              ? raw.id.trim()
-              : `preset-${Date.now()}-${newPresets.length}`;
-            const isIdUsed = (id: string) =>
-              existing.some(p => p.id === id) || newPresets.some(p => p.id === id);
-            let id = baseId;
-            let suffix = 1;
-            while (isIdUsed(id)) {
-              id = `${baseId}-${suffix++}`;
-            }
-            const name = typeof raw.name === 'string' && raw.name.trim() ? raw.name.trim() : 'Imported preset';
-            const system = typeof raw.system === 'string' && raw.system.trim() ? raw.system : 'Edit me…';
-            const temperature = typeof raw.temperature === 'number' && isFinite(raw.temperature) ? raw.temperature : 0.2;
-            const includeTranscriptWithPostprocessed =
-              typeof raw.includeTranscriptWithPostprocessed === 'boolean'
-                ? raw.includeTranscriptWithPostprocessed
-                : true;
-            const replaceSelection =
-              typeof raw.replaceSelection === 'boolean' ? raw.replaceSelection : undefined;
-            const model =
-              typeof raw.model === 'string' && raw.model.trim() ? raw.model.trim() : undefined;
-            newPresets.push({
-              id,
-              name,
-              system,
-              temperature,
-              includeTranscriptWithPostprocessed,
-              replaceSelection,
-              model,
-            });
-          };
-          if (Array.isArray(value)) {
-            value.forEach(addOne);
-          } else {
-            addOne(value as any);
-          }
-          if (!newPresets.length) {
-            new Notice('No valid presets found in JSON.');
-            return;
-          }
-          await this.saveSettings({ promptPresets: [...existing, ...newPresets] });
-          renderPresets();
-          new Notice(
-            newPresets.length === 1
-              ? 'Imported 1 preset.'
-              : `Imported ${newPresets.length} presets.`
-          );
-        });
-        modal.open();
-      }));
 
     // Recording behavior
     containerEl.createEl('h3', { text: 'Recording & Insertion' });

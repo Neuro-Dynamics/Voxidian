@@ -4,7 +4,7 @@ Record audio, transcribe via Groq Whisper, optionally postprocess with OpenAI or
 
 Features
 - Ribbon mic button + command (`Mod+Shift+M`) to start.
-- Recording modal with timer, Stop & Transcribe, Discard.
+- Recording modal with timer, Stop & Transcribe, Cancel.
 - Postprocessing toggle + preset dropdown.
 - Inserts at cursor or replaces selection (configurable).
 - Settings for Groq/OpenAI keys, models, presets, and behavior.
