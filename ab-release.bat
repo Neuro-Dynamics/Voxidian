@@ -1,16 +1,22 @@
 @echo off
-setlocal EnableExtensions
+setlocal EnableExtensions EnableDelayedExpansion
 
 set "ROOT=%~dp0"
 pushd "%ROOT%" >nul
 
 set "VERSION=%~1"
 if "%VERSION%"=="" (
-    set /p VERSION=Enter new version (e.g. 0.1.7):
+    for /f "usebackq delims=" %%i in (`node -e "const v=require('./package.json').version||'0.0.0';const parts=String(v).split('.').map(n=>parseInt(n,10)||0);while(parts.length<3)parts.push(0);parts[2]+=1;console.log(parts.slice(0,3).join('.'));"`) do set "SUGGESTED=%%i"
+    if not defined SUGGESTED set "SUGGESTED=0.0.1"
+    set /p "VERSION=Enter new version [!SUGGESTED!]: "
+    if "!VERSION!"=="" (
+        set "VERSION=!SUGGESTED!"
+        echo Using suggested version !VERSION!.
+    )
 )
 
 if "%VERSION%"=="" (
-    echo No version provided. Aborting.
+    echo Could not determine a version. Aborting.
     popd
     exit /b 1
 )
