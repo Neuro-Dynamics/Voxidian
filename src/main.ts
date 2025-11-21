@@ -6,6 +6,7 @@ import { transcribeWithGroq } from './transcribe';
 import { registerErrorLogSink, type VoxidianErrorLogEntry } from './logging';
 import { DEFAULT_SETTINGS, type AITranscriptSettings, type PromptPreset } from './types';
 import { RecordingModal } from './ui/RecordingModal';
+import { KeepAwakeManager } from './keepAwake';
 
 interface VoxidianPersistentData {
   settings?: AITranscriptSettings;
@@ -17,6 +18,7 @@ export default class AITranscriptPlugin extends Plugin {
   errorLog: VoxidianErrorLogEntry[] = [];
   private recorder?: AudioRecorder;
   private modal?: RecordingModal;
+  private keepAwake = new KeepAwakeManager();
 
   async onload() {
     const raw = (await this.loadData()) as VoxidianPersistentData | AITranscriptSettings | null;
@@ -28,6 +30,7 @@ export default class AITranscriptPlugin extends Plugin {
       this.settings = Object.assign({}, DEFAULT_SETTINGS, raw || {});
       this.errorLog = [];
     }
+    this.keepAwake.init();
 
     registerErrorLogSink((entry) => {
       this.appendErrorLog(entry);
@@ -66,11 +69,14 @@ export default class AITranscriptPlugin extends Plugin {
         },
       ),
     );
+
+    this.registerDomEvent(document, 'visibilitychange', this.handleVisibilityChange);
   }
 
   onunload() {
     try { this.recorder?.discard(); } catch { }
     try { this.modal?.close(); } catch { }
+    try { this.keepAwake.disable(); } catch { }
   }
 
   private async toggleRecording() {
@@ -94,6 +100,7 @@ export default class AITranscriptPlugin extends Plugin {
       onStart: async () => {
         try {
           await this.recorder!.start();
+          await this.enableKeepAwake();
         } catch (e: any) {
           console.error(e);
           modal.setPhase('error');
@@ -102,6 +109,7 @@ export default class AITranscriptPlugin extends Plugin {
           modal.setDiscardLabel('Close');
           this.recorder?.discard();
           this.recorder = undefined;
+          this.disableKeepAwake();
         }
       },
       onStop: async (applyPost, presetId) => {
@@ -112,6 +120,7 @@ export default class AITranscriptPlugin extends Plugin {
           let preset: PromptPreset | undefined;
           const blob = await this.recorder!.stop();
           this.recorder = undefined;
+          this.disableKeepAwake();
           const raw = await transcribeWithGroq(blob, this.settings);
           let text = raw;
           if (applyPost) {
@@ -141,6 +150,7 @@ export default class AITranscriptPlugin extends Plugin {
           modal.setDiscardLabel('Close');
           try { this.recorder?.discard(); } catch { }
           this.recorder = undefined;
+          this.disableKeepAwake();
         } finally {
           // keep modal open for user to read/close
         }
@@ -148,14 +158,19 @@ export default class AITranscriptPlugin extends Plugin {
       onDiscard: () => {
         try { this.recorder?.discard(); } catch { }
         this.recorder = undefined;
+        this.disableKeepAwake();
         modal.close();
         this.modal = undefined;
       },
       onPause: () => this.recorder?.pause(),
-      onResume: () => this.recorder?.resume(),
+      onResume: () => {
+        this.recorder?.resume();
+        void this.enableKeepAwake();
+      },
       onClose: () => {
         try { this.recorder?.discard(); } catch { }
         this.recorder = undefined;
+        this.disableKeepAwake();
         if (this.modal === modal) this.modal = undefined;
       },
     });
@@ -164,6 +179,29 @@ export default class AITranscriptPlugin extends Plugin {
     // MVP uses modal to present all status and animations
     modal.open();
   }
+
+  private shouldUseKeepAwake(): boolean {
+    return this.keepAwake.isLikelyIos();
+  }
+
+  private async enableKeepAwake(): Promise<void> {
+    if (!this.shouldUseKeepAwake()) return;
+    await this.keepAwake.enableFromUserGesture();
+  }
+
+  private disableKeepAwake(): void {
+    try { this.keepAwake.disable(); } catch { /* ignore */ }
+  }
+
+  private handleVisibilityChange = (): void => {
+    if (document.hidden) {
+      if (this.keepAwake.getState().active) this.keepAwake.disable();
+      return;
+    }
+    if (this.recorder && this.shouldUseKeepAwake()) {
+      void this.keepAwake.enableFromUserGesture();
+    }
+  };
 
   private async insertText(text: string, replaceSelectionOverride?: boolean) {
     const view = this.app.workspace.getActiveViewOfType(MarkdownView);
